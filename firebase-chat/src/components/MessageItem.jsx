@@ -8,10 +8,6 @@ function formatTime(timestamp) {
   })
 }
 
-function formatDuration(ms) {
-  return Math.round(ms).toLocaleString('en-US')
-}
-
 function DeliveryStatus({ isRead }) {
   return (
     <span
@@ -24,7 +20,7 @@ function DeliveryStatus({ isRead }) {
   )
 }
 
-export default function MessageItem({ message, isOwn, typingDurationMs }) {
+export default function MessageItem({ message, isOwn }) {
   const time = formatTime(message.createdAt)
   const isRead = Boolean(message.readAt)
 
@@ -42,12 +38,6 @@ export default function MessageItem({ message, isOwn, typingDurationMs }) {
       </div>
 
       {isOwn && <DeliveryStatus isRead={isRead} />}
-
-      {!isOwn && typingDurationMs != null && (
-        <span className={styles.typingLog}>
-          typed for {formatDuration(typingDurationMs)}ms
-        </span>
-      )}
     </div>
   )
 }

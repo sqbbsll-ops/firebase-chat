@@ -19,7 +19,7 @@ export default function Chat() {
     user,
     messages,
   )
-  const typingLogsByMessageId = useTypingLogs(roomId, user.uid)
+  const typingLogs = useTypingLogs(roomId, user.uid)
   const [sending, setSending] = useState(false)
 
   useReadReceipts(roomId, user.uid, messages)
@@ -61,7 +61,7 @@ export default function Chat() {
           currentUserId={user.uid}
           loading={loading}
           typingUsers={typingUsers}
-          typingLogsByMessageId={typingLogsByMessageId}
+          typingLogs={typingLogs}
         />
         <MessageInput
           onSend={handleSend}

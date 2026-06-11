@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { subscribeTypingLogs } from '../services/typingLogs'
 
-/** Map anchor message id → latest typing log from other users. */
+/** Typing logs from other users (not visible to the typer). */
 export function useTypingLogs(roomId, currentUserId) {
   const [logs, setLogs] = useState([])
 
@@ -10,16 +10,8 @@ export function useTypingLogs(roomId, currentUserId) {
     return subscribeTypingLogs(roomId, setLogs, console.error)
   }, [roomId])
 
-  const logsByMessageId = useMemo(() => {
-    const map = {}
-    logs
-      .filter((log) => log.typerId !== currentUserId)
-      .forEach((log) => {
-        if (!log.anchorMessageId || map[log.anchorMessageId]) return
-        map[log.anchorMessageId] = log
-      })
-    return map
-  }, [logs, currentUserId])
-
-  return logsByMessageId
+  return useMemo(
+    () => logs.filter((log) => log.typerId !== currentUserId),
+    [logs, currentUserId],
+  )
 }
