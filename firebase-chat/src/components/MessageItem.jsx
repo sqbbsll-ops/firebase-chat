@@ -8,8 +8,25 @@ function formatTime(timestamp) {
   })
 }
 
-export default function MessageItem({ message, isOwn }) {
+function formatDuration(ms) {
+  return Math.round(ms).toLocaleString('en-US')
+}
+
+function DeliveryStatus({ isRead }) {
+  return (
+    <span
+      className={`${styles.status} ${isRead ? styles.statusRead : styles.statusDelivered}`}
+      aria-label={isRead ? 'Read' : 'Delivered'}
+    >
+      <span className={styles.statusDot} aria-hidden="true" />
+      {isRead ? 'Read' : 'Delivered'}
+    </span>
+  )
+}
+
+export default function MessageItem({ message, isOwn, typingDurationMs }) {
   const time = formatTime(message.createdAt)
+  const isRead = Boolean(message.readAt)
 
   return (
     <div
@@ -24,8 +41,12 @@ export default function MessageItem({ message, isOwn }) {
         {time && <time className={styles.time}>{time}</time>}
       </div>
 
-      {isOwn && message.readAt && (
-        <span className={styles.readLabel}>Read</span>
+      {isOwn && <DeliveryStatus isRead={isRead} />}
+
+      {!isOwn && typingDurationMs != null && (
+        <span className={styles.typingLog}>
+          typed for {formatDuration(typingDurationMs)}ms
+        </span>
       )}
     </div>
   )

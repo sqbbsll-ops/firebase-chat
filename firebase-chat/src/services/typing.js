@@ -6,7 +6,7 @@ function typingRef(chatId, userId) {
 }
 
 /** Set whether the current user is typing in a chat */
-export async function setTyping(chatId, userId, displayName, isTyping) {
+export async function setTyping(chatId, userId, displayName, isTyping, startedAt = null) {
   const userTypingRef = typingRef(chatId, userId)
 
   if (!isTyping) {
@@ -17,6 +17,7 @@ export async function setTyping(chatId, userId, displayName, isTyping) {
   await set(userTypingRef, {
     displayName,
     isTyping: true,
+    startedAt: startedAt ?? Date.now(),
     updatedAt: serverTimestamp(),
   })
 
@@ -34,6 +35,7 @@ export function subscribeTyping(chatId, currentUserId, onTypingUsers) {
       .map(([uid, value]) => ({
         uid,
         displayName: value.displayName ?? 'Someone',
+        startedAt: value.startedAt ?? null,
       }))
     onTypingUsers(typingUsers)
   })

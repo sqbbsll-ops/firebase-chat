@@ -8,13 +8,14 @@ export default function MessageList({
   currentUserId,
   loading,
   typingUsers = [],
+  typingLogsByMessageId = {},
 }) {
   const bottomRef = useRef(null)
   const hasTyping = typingUsers.length > 0
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, typingUsers])
+  }, [messages, typingUsers, typingLogsByMessageId])
 
   if (loading) {
     return <div className={styles.empty}>Loading messages…</div>
@@ -35,6 +36,11 @@ export default function MessageList({
           key={message.id}
           message={message}
           isOwn={message.senderId === currentUserId}
+          typingDurationMs={
+            message.senderId !== currentUserId
+              ? typingLogsByMessageId[message.id]?.durationMs
+              : undefined
+          }
         />
       ))}
       <TypingIndicator typingUsers={typingUsers} />

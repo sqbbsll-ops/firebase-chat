@@ -16,7 +16,6 @@ export default function MessageInput({ onSend, onTypingChange, disabled }) {
     if (!trimmed || disabled) return
 
     setText('')
-    onTypingChange?.(false)
     await onSend(trimmed)
   }
 
