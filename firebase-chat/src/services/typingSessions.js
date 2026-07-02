@@ -37,6 +37,7 @@ export async function saveTypingSession({
   }
 
   const docRef = await addDoc(typingSessionsRef(), payload)
+  console.log('[debug] Firestore write success', docRef.id)
   console.info('[typingSessions] saved', docRef.id, {
     participantId: payload.participantId,
     roomId: payload.roomId,

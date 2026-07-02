@@ -18,35 +18,51 @@ export function useTyping(roomId, participantId, typingDelayMs) {
   const endSessionRef = useRef(null)
 
   useEffect(() => {
+    console.log('[debug] useTyping mounted', { roomId, participantId, typingDelayMs })
     if (!roomId || !participantId) return undefined
     return subscribeTyping(roomId, participantId, setTypingUsers)
-  }, [roomId, participantId])
+  }, [roomId, participantId, typingDelayMs])
 
   const ensureSession = useCallback((startTime = Date.now()) => {
     if (!sessionRef.current) {
       sessionRef.current = createEmptySession(startTime)
+      console.log('[debug] session created', {
+        roomId,
+        participantId,
+        sessionStartTime: startTime,
+      })
     }
     return sessionRef.current
-  }, [])
+  }, [roomId, participantId])
 
   const persistSession = useCallback(async () => {
     const session = sessionRef.current
     sessionRef.current = null
 
     if (!session || session.keyboardEvents.length === 0) {
+      console.log('[debug] persist skipped', {
+        roomId,
+        participantId,
+        hasSession: Boolean(session),
+        keyboardEventCount: session?.keyboardEvents.length ?? 0,
+      })
       return
     }
 
+    const sessionData = {
+      participantId,
+      roomId,
+      deltaT: typingDelayMs,
+      keyboardEvents: session.keyboardEvents,
+      indicatorEvents: session.indicatorEvents,
+      sessionStartTime: session.sessionStartTime,
+      sessionEndTime: Date.now(),
+    }
+
+    console.log('[debug] saving session:', sessionData)
+
     try {
-      await saveTypingSession({
-        participantId,
-        roomId,
-        deltaT: typingDelayMs,
-        keyboardEvents: session.keyboardEvents,
-        indicatorEvents: session.indicatorEvents,
-        sessionStartTime: session.sessionStartTime,
-        sessionEndTime: Date.now(),
-      })
+      await saveTypingSession(sessionData)
     } catch (error) {
       console.error('[typingSessions] failed to save session', {
         participantId,
@@ -63,6 +79,7 @@ export function useTyping(roomId, participantId, typingDelayMs) {
     const timestamp = Date.now()
     indicatorOnRef.current = true
     ensureSession(timestamp).indicatorEvents.push({ timestamp, state: 'on' })
+    console.log('[debug] indicator on', { roomId, participantId, timestamp })
 
     try {
       await setTyping(roomId, participantId, participantId, true, timestamp)
@@ -72,11 +89,19 @@ export function useTyping(roomId, participantId, typingDelayMs) {
   }, [roomId, participantId, ensureSession])
 
   const turnIndicatorOff = useCallback(async () => {
-    if (!roomId || !participantId || !indicatorOnRef.current) return
+    if (!roomId || !participantId || !indicatorOnRef.current) {
+      console.log('[debug] indicator off skipped', {
+        roomId,
+        participantId,
+        indicatorOn: indicatorOnRef.current,
+      })
+      return
+    }
 
     const timestamp = Date.now()
     indicatorOnRef.current = false
     sessionRef.current?.indicatorEvents.push({ timestamp, state: 'off' })
+    console.log('[debug] indicator off', { roomId, participantId, timestamp })
 
     try {
       await setTyping(roomId, participantId, participantId, false)
@@ -86,6 +111,12 @@ export function useTyping(roomId, participantId, typingDelayMs) {
   }, [roomId, participantId])
 
   const endSession = useCallback(async () => {
+    console.log('[debug] session ending...', {
+      roomId,
+      participantId,
+      keyboardEventCount: sessionRef.current?.keyboardEvents.length ?? 0,
+    })
+
     if (hideTimer.current) {
       clearTimeout(hideTimer.current)
       hideTimer.current = null
@@ -96,7 +127,7 @@ export function useTyping(roomId, participantId, typingDelayMs) {
     } finally {
       await persistSession()
     }
-  }, [turnIndicatorOff, persistSession])
+  }, [turnIndicatorOff, persistSession, roomId, participantId])
 
   useEffect(() => {
     endSessionRef.current = endSession
@@ -107,22 +138,38 @@ export function useTyping(roomId, participantId, typingDelayMs) {
       clearTimeout(hideTimer.current)
     }
 
+    console.log('[debug] hide timer scheduled', {
+      roomId,
+      participantId,
+      typingDelayMs,
+    })
+
     hideTimer.current = setTimeout(() => {
       hideTimer.current = null
+      console.log('[debug] hide timer fired', { roomId, participantId })
       void endSessionRef.current?.()
     }, typingDelayMs)
-  }, [typingDelayMs])
+  }, [roomId, participantId, typingDelayMs])
 
   const recordKeyboardEvent = useCallback(
     (type) => {
       const timestamp = Date.now()
       ensureSession(timestamp).keyboardEvents.push({ timestamp, type })
+      console.log('[debug] keyboard event recorded', {
+        roomId,
+        participantId,
+        type,
+        timestamp,
+        totalEvents: sessionRef.current?.keyboardEvents.length ?? 0,
+      })
     },
-    [ensureSession],
+    [ensureSession, roomId, participantId],
   )
 
   const notifyTyping = useCallback(
     (isTyping) => {
+      console.log('[debug] notifyTyping', { roomId, participantId, isTyping })
+
       if (!roomId || !participantId) return
 
       if (hideTimer.current) {
@@ -142,12 +189,14 @@ export function useTyping(roomId, participantId, typingDelayMs) {
   )
 
   const cancelTypingSession = useCallback(async () => {
+    console.log('[debug] cancelTypingSession (send)', { roomId, participantId })
     await endSession()
-  }, [endSession])
+  }, [endSession, roomId, participantId])
 
   useEffect(() => {
     function flushOnPageHide() {
       if (sessionRef.current?.keyboardEvents.length) {
+        console.log('[debug] pagehide flush', { roomId, participantId })
         void endSessionRef.current?.()
       }
     }
@@ -155,7 +204,18 @@ export function useTyping(roomId, participantId, typingDelayMs) {
     window.addEventListener('pagehide', flushOnPageHide)
     return () => {
       window.removeEventListener('pagehide', flushOnPageHide)
-      if (hideTimer.current) clearTimeout(hideTimer.current)
+
+      if (hideTimer.current) {
+        console.log('[debug] cleanup clearing pending timer', { roomId, participantId })
+        clearTimeout(hideTimer.current)
+        hideTimer.current = null
+      }
+
+      if (sessionRef.current?.keyboardEvents.length) {
+        console.log('[debug] cleanup flushing session', { roomId, participantId })
+        void endSessionRef.current?.()
+      }
+
       if (indicatorOnRef.current && roomId && participantId) {
         void setTyping(roomId, participantId, participantId, false)
       }
