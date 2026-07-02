@@ -17,6 +17,22 @@ function normalizeSegment(segment, allowedTypes) {
   }
 }
 
+function normalizeKeyboardEvent(event) {
+  const type = String(event.type)
+  return {
+    timestamp: toInt(event.timestamp),
+    type: type === 'delete' ? 'delete' : 'input',
+  }
+}
+
+function normalizeIndicatorEvent(event) {
+  const state = String(event.state)
+  return {
+    timestamp: toInt(event.timestamp),
+    state: state === 'off' ? 'off' : 'on',
+  }
+}
+
 /** Save a completed typing session for experiment analysis. */
 export async function saveTypingSession(sessionData) {
   const {
@@ -24,6 +40,10 @@ export async function saveTypingSession(sessionData) {
     roomId,
     deltaT,
     endReason,
+    sessionStartTime,
+    sessionEndTime,
+    keyboardEvents,
+    indicatorEvents,
     typingDuration,
     indicatorDuration,
     maxPause,
@@ -39,6 +59,8 @@ export async function saveTypingSession(sessionData) {
     roomId,
     deltaT,
     endReason,
+    keyboardEventCount: keyboardEvents?.length ?? 0,
+    indicatorEventCount: indicatorEvents?.length ?? 0,
     authUid: auth.currentUser?.uid ?? null,
   })
 
@@ -53,6 +75,10 @@ export async function saveTypingSession(sessionData) {
     roomId: String(roomId),
     deltaT: toInt(deltaT),
     endReason: String(endReason),
+    sessionStartTime: toInt(sessionStartTime),
+    sessionEndTime: toInt(sessionEndTime),
+    keyboardEvents: (keyboardEvents ?? []).map(normalizeKeyboardEvent),
+    indicatorEvents: (indicatorEvents ?? []).map(normalizeIndicatorEvent),
     typingDuration: toInt(typingDuration),
     indicatorDuration: toInt(indicatorDuration),
     maxPause: toInt(maxPause),

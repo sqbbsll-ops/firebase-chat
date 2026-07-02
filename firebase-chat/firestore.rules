@@ -18,6 +18,10 @@ service cloud.firestore {
         && request.resource.data.roomId is string
         && request.resource.data.deltaT is int
         && request.resource.data.endReason is string
+        && request.resource.data.sessionStartTime is int
+        && request.resource.data.sessionEndTime is int
+        && request.resource.data.keyboardEvents is list
+        && request.resource.data.indicatorEvents is list
         && request.resource.data.typingDuration is int
         && request.resource.data.indicatorDuration is int
         && request.resource.data.maxPause is int
