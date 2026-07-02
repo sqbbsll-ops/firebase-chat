@@ -1,109 +1,65 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { setTyping, subscribeTyping } from '../services/typing'
-import { saveTypingLog } from '../services/typingLogs'
 
-const TYPING_IDLE_MS = 10_000
-
-function getLastMessageIdForUser(messages, userId) {
-  const userMessages = messages.filter((m) => m.senderId === userId)
-  return userMessages[userMessages.length - 1]?.id ?? null
-}
-
-export function useTyping(chatId, user, messages) {
+export function useTyping(chatId, participantId, typingDelayMs) {
   const [typingUsers, setTypingUsers] = useState([])
-  const stopTimer = useRef(null)
-  const sessionStartRef = useRef(null)
-  const messagesRef = useRef(messages)
+  const hideTimer = useRef(null)
 
   useEffect(() => {
-    messagesRef.current = messages
-  }, [messages])
+    if (!chatId || !participantId) return undefined
+    return subscribeTyping(chatId, participantId, setTypingUsers)
+  }, [chatId, participantId])
 
-  useEffect(() => {
-    if (!chatId || !user?.uid) return undefined
-    return subscribeTyping(chatId, user.uid, setTypingUsers)
-  }, [chatId, user?.uid])
+  const clearTypingState = useCallback(async () => {
+    if (!chatId || !participantId) return
+    await setTyping(chatId, participantId, participantId, false)
+  }, [chatId, participantId])
 
-  const endTypingSession = useCallback(
-    async (save = true) => {
-      if (stopTimer.current) {
-        clearTimeout(stopTimer.current)
-        stopTimer.current = null
-      }
+  const scheduleHideTyping = useCallback(() => {
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current)
+    }
 
-      if (!chatId || !user?.uid) return
-
-      const displayName = user.displayName || user.email || 'User'
-      const start = sessionStartRef.current
-      sessionStartRef.current = null
-
-      await setTyping(chatId, user.uid, displayName, false)
-
-      if (!save || !start) return
-
-      const durationMs = Date.now() - start
-      if (durationMs <= 0) return
-
-      const anchorMessageId = getLastMessageIdForUser(
-        messagesRef.current,
-        user.uid,
-      )
-      if (!anchorMessageId) return
-
-      saveTypingLog(chatId, {
-        typerId: user.uid,
-        durationMs,
-        anchorMessageId,
-      }).catch(console.error)
-    },
-    [chatId, user],
-  )
+    hideTimer.current = setTimeout(() => {
+      clearTypingState()
+      hideTimer.current = null
+    }, typingDelayMs)
+  }, [clearTypingState, typingDelayMs])
 
   const notifyTyping = useCallback(
     (isTyping) => {
-      if (!chatId || !user?.uid) return
+      if (!chatId || !participantId) return
 
-      const displayName = user.displayName || user.email || 'User'
-
-      if (stopTimer.current) {
-        clearTimeout(stopTimer.current)
-        stopTimer.current = null
+      if (hideTimer.current) {
+        clearTimeout(hideTimer.current)
+        hideTimer.current = null
       }
 
       if (!isTyping) {
-        endTypingSession(true)
+        scheduleHideTyping()
         return
       }
 
-      if (!sessionStartRef.current) {
-        sessionStartRef.current = Date.now()
-      }
-
-      setTyping(
-        chatId,
-        user.uid,
-        displayName,
-        true,
-        sessionStartRef.current,
-      )
-
-      stopTimer.current = setTimeout(() => {
-        endTypingSession(true)
-        stopTimer.current = null
-      }, TYPING_IDLE_MS)
+      setTyping(chatId, participantId, participantId, true, Date.now())
+      scheduleHideTyping()
     },
-    [chatId, user, endTypingSession],
+    [chatId, participantId, scheduleHideTyping],
   )
 
   const cancelTypingSession = useCallback(() => {
-    endTypingSession(false)
-  }, [endTypingSession])
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current)
+      hideTimer.current = null
+    }
+    clearTypingState()
+  }, [clearTypingState])
 
   useEffect(() => {
     return () => {
-      endTypingSession(false)
+      if (hideTimer.current) clearTimeout(hideTimer.current)
+      clearTypingState()
     }
-  }, [endTypingSession])
+  }, [clearTypingState])
 
   return { typingUsers, notifyTyping, cancelTypingSession }
 }
