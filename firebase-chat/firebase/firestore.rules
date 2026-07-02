@@ -17,14 +17,15 @@ service cloud.firestore {
         && request.resource.data.participantId is string
         && request.resource.data.roomId is string
         && request.resource.data.deltaT is int
-        && request.resource.data.sessionStartTime is int
-        && request.resource.data.sessionEndTime is int
         && request.resource.data.endReason is string
-        && request.resource.data.totalTypingMs is int
+        && request.resource.data.typingDuration is int
+        && request.resource.data.indicatorDuration is int
+        && request.resource.data.maxPause is int
+        && request.resource.data.pauseCount is int
         && request.resource.data.totalPauseMs is int
         && request.resource.data.totalMaskedMs is int
-        && request.resource.data.raw is map
-        && request.resource.data.processed is map;
+        && request.resource.data.realTimeline is list
+        && request.resource.data.indicatorTimeline is list;
       allow update, delete: if false;
     }
   }

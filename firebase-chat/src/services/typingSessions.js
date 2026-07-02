@@ -9,20 +9,6 @@ function toInt(value) {
   return Math.trunc(Number(value))
 }
 
-function normalizeKeyboardEvent(event) {
-  return {
-    timestamp: toInt(event.timestamp),
-    type: event.type === 'delete' ? 'delete' : 'input',
-  }
-}
-
-function normalizeIndicatorEvent(event) {
-  return {
-    timestamp: toInt(event.timestamp),
-    state: event.state === 'off' ? 'off' : 'on',
-  }
-}
-
 function normalizeSegment(segment, allowedTypes) {
   const type = String(segment.type)
   return {
@@ -36,48 +22,37 @@ export async function saveTypingSession({
   participantId,
   roomId,
   deltaT,
-  sessionStartTime,
-  sessionEndTime,
   endReason,
-  totalTypingMs,
+  typingDuration,
+  indicatorDuration,
+  maxPause,
+  pauseCount,
   totalPauseMs,
   totalMaskedMs,
-  raw,
-  processed,
+  realTimeline,
+  indicatorTimeline,
 }) {
   const payload = {
     participantId: String(participantId),
     roomId: String(roomId),
     deltaT: toInt(deltaT),
-    sessionStartTime: toInt(sessionStartTime),
-    sessionEndTime: toInt(sessionEndTime),
     endReason: String(endReason),
-    totalTypingMs: toInt(totalTypingMs),
+    typingDuration: toInt(typingDuration),
+    indicatorDuration: toInt(indicatorDuration),
+    maxPause: toInt(maxPause),
+    pauseCount: toInt(pauseCount),
     totalPauseMs: toInt(totalPauseMs),
     totalMaskedMs: toInt(totalMaskedMs),
-    raw: {
-      keyboardEvents: raw.keyboardEvents.map(normalizeKeyboardEvent),
-      indicatorEvents: raw.indicatorEvents.map(normalizeIndicatorEvent),
-    },
-    processed: {
-      realTimeline: processed.realTimeline.map((segment) =>
-        normalizeSegment(segment, ['typing', 'pause']),
-      ),
-      indicatorTimeline: processed.indicatorTimeline.map((segment) =>
-        normalizeSegment(segment, ['on', 'off']),
-      ),
-    },
+    realTimeline: realTimeline.map((segment) =>
+      normalizeSegment(segment, ['typing', 'pause']),
+    ),
+    indicatorTimeline: indicatorTimeline.map((segment) =>
+      normalizeSegment(segment, ['on', 'off']),
+    ),
     savedAt: serverTimestamp(),
   }
 
   const docRef = await addDoc(typingSessionsRef(), payload)
-  console.info('[typingSessions] saved', docRef.id, {
-    participantId: payload.participantId,
-    roomId: payload.roomId,
-    endReason: payload.endReason,
-    totalTypingMs: payload.totalTypingMs,
-    totalPauseMs: payload.totalPauseMs,
-    totalMaskedMs: payload.totalMaskedMs,
-  })
+  console.info('[typingSessions] saved', docRef.id, payload)
   return docRef
 }

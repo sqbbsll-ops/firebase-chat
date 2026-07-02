@@ -1,4 +1,4 @@
-const PAUSE_THRESHOLD_MS = 1000
+const PAUSE_THRESHOLD_MS = 500
 
 function pushSegment(segments, type, durationMs) {
   const duration = Math.trunc(durationMs)
@@ -19,9 +19,19 @@ function sumDuration(segments, type) {
     .reduce((total, segment) => total + segment.durationMs, 0)
 }
 
+function maxDuration(segments, type) {
+  return segments
+    .filter((segment) => segment.type === type)
+    .reduce((max, segment) => Math.max(max, segment.durationMs), 0)
+}
+
+function countSegments(segments, type) {
+  return segments.filter((segment) => segment.type === type).length
+}
+
 /**
- * Convert raw keyboard events into alternating typing/pause segments
- * within a single session (first key → indicator close).
+ * Build realTimeline from keyboard timestamps.
+ * Pause = gap without keystrokes for more than 500ms.
  */
 export function buildRealTimeline(keyboardEvents, sessionStartTime, sessionEndTime) {
   const timestamps = keyboardEvents
@@ -66,9 +76,6 @@ export function buildRealTimeline(keyboardEvents, sessionStartTime, sessionEndTi
   return segments
 }
 
-/**
- * Convert raw indicator events into alternating on/off duration segments.
- */
 export function buildIndicatorTimeline(indicatorEvents, sessionEndTime) {
   const sorted = [...indicatorEvents].sort((a, b) => a.timestamp - b.timestamp)
   if (sorted.length === 0) return []
@@ -85,9 +92,6 @@ export function buildIndicatorTimeline(indicatorEvents, sessionEndTime) {
   return segments
 }
 
-/**
- * Build processed timelines and aggregate metrics for one session.
- */
 export function buildSessionAnalysis({
   keyboardEvents,
   indicatorEvents,
@@ -104,15 +108,19 @@ export function buildSessionAnalysis({
     sessionEndTime,
   )
 
-  const totalTypingMs = sumDuration(realTimeline, 'typing')
+  const typingDuration = sumDuration(realTimeline, 'typing')
   const totalPauseMs = sumDuration(realTimeline, 'pause')
+  const indicatorDuration = sumDuration(indicatorTimeline, 'on')
   const totalPresentedPauseMs = sumDuration(indicatorTimeline, 'off')
   const totalMaskedMs = Math.max(0, totalPauseMs - totalPresentedPauseMs)
 
   return {
     realTimeline,
     indicatorTimeline,
-    totalTypingMs,
+    typingDuration,
+    indicatorDuration,
+    maxPause: maxDuration(realTimeline, 'pause'),
+    pauseCount: countSegments(realTimeline, 'pause'),
     totalPauseMs,
     totalMaskedMs,
   }

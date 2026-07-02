@@ -50,20 +50,15 @@ export function useTyping(roomId, participantId, typingDelayMs) {
         participantId,
         roomId,
         deltaT: typingDelayMs,
-        sessionStartTime: session.sessionStartTime,
-        sessionEndTime,
         endReason,
-        totalTypingMs: analysis.totalTypingMs,
+        typingDuration: analysis.typingDuration,
+        indicatorDuration: analysis.indicatorDuration,
+        maxPause: analysis.maxPause,
+        pauseCount: analysis.pauseCount,
         totalPauseMs: analysis.totalPauseMs,
         totalMaskedMs: analysis.totalMaskedMs,
-        raw: {
-          keyboardEvents: session.keyboardEvents,
-          indicatorEvents: session.indicatorEvents,
-        },
-        processed: {
-          realTimeline: analysis.realTimeline,
-          indicatorTimeline: analysis.indicatorTimeline,
-        },
+        realTimeline: analysis.realTimeline,
+        indicatorTimeline: analysis.indicatorTimeline,
       }
 
       console.log('[debug] saving session:', sessionData)
