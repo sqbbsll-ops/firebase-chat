@@ -1,4 +1,5 @@
 const PAUSE_THRESHOLD_MS = 500
+const MIN_SEGMENT_MS = 50
 
 function pushSegment(segments, type, durationMs) {
   const duration = Math.trunc(durationMs)
@@ -11,6 +12,50 @@ function pushSegment(segments, type, durationMs) {
   }
 
   segments.push({ type, durationMs: duration })
+}
+
+function mergeShortSegments(segments, minMs = MIN_SEGMENT_MS) {
+  if (segments.length === 0) return []
+
+  const merged = segments.map((segment) => ({ ...segment }))
+
+  for (let i = 0; i < merged.length; i += 1) {
+    if (merged[i].durationMs >= minMs) continue
+
+    if (i > 0) {
+      merged[i - 1].durationMs += merged[i].durationMs
+      merged.splice(i, 1)
+      i -= 1
+      continue
+    }
+
+    if (merged.length > 1) {
+      merged[1].durationMs += merged[0].durationMs
+      merged.shift()
+      i -= 1
+    }
+  }
+
+  return merged
+}
+
+function consolidateAdjacent(segments) {
+  const consolidated = []
+
+  for (const segment of segments) {
+    const last = consolidated[consolidated.length - 1]
+    if (last?.type === segment.type) {
+      last.durationMs += segment.durationMs
+    } else {
+      consolidated.push({ ...segment })
+    }
+  }
+
+  return consolidated
+}
+
+function finalizeTimeline(segments) {
+  return mergeShortSegments(consolidateAdjacent(segments))
 }
 
 function sumDuration(segments, type) {
@@ -31,21 +76,19 @@ function countSegments(segments, type) {
 
 /**
  * Build realTimeline from keyboard timestamps.
- * Pause = gap without keystrokes for more than 500ms.
+ * Pause = gap without keystrokes for at least 500ms.
+ * Typing = active burst; single-key bursts span until idle threshold (500ms).
  */
 export function buildRealTimeline(keyboardEvents, sessionStartTime, sessionEndTime) {
-  const timestamps = keyboardEvents
-    .map((event) => event.timestamp)
-    .sort((a, b) => a - b)
+  const timestamps = [...new Set(keyboardEvents.map((event) => event.timestamp))].sort(
+    (a, b) => a - b,
+  )
 
   if (timestamps.length === 0) return []
 
   const segments = []
+  let cursor = sessionStartTime
   let index = 0
-
-  if (timestamps[0] > sessionStartTime) {
-    pushSegment(segments, 'pause', timestamps[0] - sessionStartTime)
-  }
 
   while (index < timestamps.length) {
     const burstStart = timestamps[index]
@@ -60,20 +103,37 @@ export function buildRealTimeline(keyboardEvents, sessionStartTime, sessionEndTi
       index += 1
     }
 
-    const typingDuration = burstEnd > burstStart ? burstEnd - burstStart : 1
-    pushSegment(segments, 'typing', typingDuration)
+    if (burstStart > cursor) {
+      pushSegment(segments, 'pause', burstStart - cursor)
+    }
 
-    if (index < timestamps.length) {
-      pushSegment(segments, 'pause', timestamps[index] - burstEnd)
+    const nextBurstStart = index < timestamps.length ? timestamps[index] : sessionEndTime
+    const typingEnd =
+      burstStart === burstEnd
+        ? Math.min(burstEnd + PAUSE_THRESHOLD_MS, nextBurstStart, sessionEndTime)
+        : burstEnd
+
+    pushSegment(segments, 'typing', typingEnd - burstStart)
+
+    if (burstEnd === burstStart) {
+      cursor = typingEnd
+    } else {
+      cursor = burstEnd
+      if (index < timestamps.length) {
+        const gap = timestamps[index] - burstEnd
+        if (gap >= PAUSE_THRESHOLD_MS) {
+          pushSegment(segments, 'pause', gap)
+          cursor = timestamps[index]
+        }
+      }
     }
   }
 
-  const lastKey = timestamps[timestamps.length - 1]
-  if (sessionEndTime > lastKey) {
-    pushSegment(segments, 'pause', sessionEndTime - lastKey)
+  if (sessionEndTime > cursor) {
+    pushSegment(segments, 'pause', sessionEndTime - cursor)
   }
 
-  return segments
+  return finalizeTimeline(segments)
 }
 
 export function buildIndicatorTimeline(indicatorEvents, sessionEndTime) {
@@ -89,7 +149,7 @@ export function buildIndicatorTimeline(indicatorEvents, sessionEndTime) {
     pushSegment(segments, current.state, end - current.timestamp)
   }
 
-  return segments
+  return finalizeTimeline(segments)
 }
 
 export function buildSessionAnalysis({
