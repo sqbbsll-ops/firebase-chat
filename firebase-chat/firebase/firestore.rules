@@ -10,5 +10,18 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt']);
       allow delete: if false;
     }
+
+    match /typingSessions/{sessionId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.participantId is string
+        && request.resource.data.roomId is string
+        && request.resource.data.deltaT is int
+        && request.resource.data.sessionStartTime is int
+        && request.resource.data.sessionEndTime is int
+        && request.resource.data.keyboardEvents is list
+        && request.resource.data.indicatorEvents is list;
+      allow update, delete: if false;
+    }
   }
 }

@@ -1,19 +1,77 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { setTyping, subscribeTyping } from '../services/typing'
+import { saveTypingSession } from '../services/typingSessions'
 
-export function useTyping(chatId, participantId, typingDelayMs) {
+function createEmptySession(startTime) {
+  return {
+    keyboardEvents: [],
+    indicatorEvents: [],
+    sessionStartTime: startTime,
+  }
+}
+
+export function useTyping(roomId, participantId, typingDelayMs) {
   const [typingUsers, setTypingUsers] = useState([])
   const hideTimer = useRef(null)
+  const sessionRef = useRef(null)
+  const indicatorOnRef = useRef(false)
 
   useEffect(() => {
-    if (!chatId || !participantId) return undefined
-    return subscribeTyping(chatId, participantId, setTypingUsers)
-  }, [chatId, participantId])
+    if (!roomId || !participantId) return undefined
+    return subscribeTyping(roomId, participantId, setTypingUsers)
+  }, [roomId, participantId])
 
-  const clearTypingState = useCallback(async () => {
-    if (!chatId || !participantId) return
-    await setTyping(chatId, participantId, participantId, false)
-  }, [chatId, participantId])
+  const ensureSession = useCallback((startTime = Date.now()) => {
+    if (!sessionRef.current) {
+      sessionRef.current = createEmptySession(startTime)
+    }
+    return sessionRef.current
+  }, [])
+
+  const turnIndicatorOn = useCallback(async () => {
+    if (!roomId || !participantId || indicatorOnRef.current) return
+
+    const timestamp = Date.now()
+    indicatorOnRef.current = true
+    ensureSession(timestamp).indicatorEvents.push({ timestamp, state: 'on' })
+    await setTyping(roomId, participantId, participantId, true, timestamp)
+  }, [roomId, participantId, ensureSession])
+
+  const turnIndicatorOff = useCallback(async () => {
+    if (!roomId || !participantId || !indicatorOnRef.current) return
+
+    const timestamp = Date.now()
+    indicatorOnRef.current = false
+    sessionRef.current?.indicatorEvents.push({ timestamp, state: 'off' })
+    await setTyping(roomId, participantId, participantId, false)
+  }, [roomId, participantId])
+
+  const persistSession = useCallback(async () => {
+    const session = sessionRef.current
+    sessionRef.current = null
+
+    if (!session || session.keyboardEvents.length === 0) return
+
+    await saveTypingSession({
+      participantId,
+      roomId,
+      deltaT: typingDelayMs,
+      keyboardEvents: session.keyboardEvents,
+      indicatorEvents: session.indicatorEvents,
+      sessionStartTime: session.sessionStartTime,
+      sessionEndTime: Date.now(),
+    }).catch(console.error)
+  }, [participantId, roomId, typingDelayMs])
+
+  const endSession = useCallback(async () => {
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current)
+      hideTimer.current = null
+    }
+
+    await turnIndicatorOff()
+    await persistSession()
+  }, [turnIndicatorOff, persistSession])
 
   const scheduleHideTyping = useCallback(() => {
     if (hideTimer.current) {
@@ -21,14 +79,22 @@ export function useTyping(chatId, participantId, typingDelayMs) {
     }
 
     hideTimer.current = setTimeout(() => {
-      clearTypingState()
+      endSession()
       hideTimer.current = null
     }, typingDelayMs)
-  }, [clearTypingState, typingDelayMs])
+  }, [endSession, typingDelayMs])
+
+  const recordKeyboardEvent = useCallback(
+    (type) => {
+      const timestamp = Date.now()
+      ensureSession(timestamp).keyboardEvents.push({ timestamp, type })
+    },
+    [ensureSession],
+  )
 
   const notifyTyping = useCallback(
     (isTyping) => {
-      if (!chatId || !participantId) return
+      if (!roomId || !participantId) return
 
       if (hideTimer.current) {
         clearTimeout(hideTimer.current)
@@ -40,26 +106,29 @@ export function useTyping(chatId, participantId, typingDelayMs) {
         return
       }
 
-      setTyping(chatId, participantId, participantId, true, Date.now())
+      turnIndicatorOn()
       scheduleHideTyping()
     },
-    [chatId, participantId, scheduleHideTyping],
+    [roomId, participantId, scheduleHideTyping, turnIndicatorOn],
   )
 
-  const cancelTypingSession = useCallback(() => {
-    if (hideTimer.current) {
-      clearTimeout(hideTimer.current)
-      hideTimer.current = null
-    }
-    clearTypingState()
-  }, [clearTypingState])
+  const cancelTypingSession = useCallback(async () => {
+    await endSession()
+  }, [endSession])
 
   useEffect(() => {
     return () => {
       if (hideTimer.current) clearTimeout(hideTimer.current)
-      clearTypingState()
+      if (indicatorOnRef.current && roomId && participantId) {
+        setTyping(roomId, participantId, participantId, false)
+      }
     }
-  }, [clearTypingState])
+  }, [roomId, participantId])
 
-  return { typingUsers, notifyTyping, cancelTypingSession }
+  return {
+    typingUsers,
+    notifyTyping,
+    recordKeyboardEvent,
+    cancelTypingSession,
+  }
 }

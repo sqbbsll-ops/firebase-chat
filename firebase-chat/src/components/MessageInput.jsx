@@ -1,11 +1,22 @@
 import { useState } from 'react'
 import styles from './MessageInput.module.css'
 
-export default function MessageInput({ onSend, onTypingChange, disabled }) {
+export default function MessageInput({
+  onSend,
+  onTypingChange,
+  onKeyboardEvent,
+  disabled,
+}) {
   const [text, setText] = useState('')
 
   function handleChange(e) {
     const value = e.target.value
+    const previousLength = text.length
+
+    if (value.length !== previousLength) {
+      onKeyboardEvent?.(value.length > previousLength ? 'input' : 'delete')
+    }
+
     setText(value)
     onTypingChange?.(value.length > 0)
   }

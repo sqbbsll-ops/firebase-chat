@@ -15,17 +15,14 @@ export default function ChatPanel({
 }) {
   const roomId = buildRoomId(participantId, partnerId)
   const { messages, loading, error } = useMessages(roomId)
-  const { typingUsers, notifyTyping, cancelTypingSession } = useTyping(
-    roomId,
-    participantId,
-    typingDelayMs,
-  )
+  const { typingUsers, notifyTyping, recordKeyboardEvent, cancelTypingSession } =
+    useTyping(roomId, participantId, typingDelayMs)
   const [sending, setSending] = useState(false)
 
   useReadReceipts(roomId, participantId, messages)
 
   async function handleSend(text) {
-    cancelTypingSession()
+    await cancelTypingSession()
     setSending(true)
     try {
       await sendMessage(roomId, {
@@ -61,6 +58,7 @@ export default function ChatPanel({
         <MessageInput
           onSend={handleSend}
           onTypingChange={notifyTyping}
+          onKeyboardEvent={recordKeyboardEvent}
           disabled={sending}
         />
       </main>
