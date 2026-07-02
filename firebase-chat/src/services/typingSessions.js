@@ -1,5 +1,5 @@
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
-import { db } from '../firebase/config'
+import { auth, db } from '../firebase/config'
 
 function typingSessionsRef() {
   return collection(db, 'typingSessions')
@@ -18,20 +18,36 @@ function normalizeSegment(segment, allowedTypes) {
 }
 
 /** Save a completed typing session for experiment analysis. */
-export async function saveTypingSession({
-  participantId,
-  roomId,
-  deltaT,
-  endReason,
-  typingDuration,
-  indicatorDuration,
-  maxPause,
-  pauseCount,
-  totalPauseMs,
-  totalMaskedMs,
-  realTimeline,
-  indicatorTimeline,
-}) {
+export async function saveTypingSession(sessionData) {
+  const {
+    participantId,
+    roomId,
+    deltaT,
+    endReason,
+    typingDuration,
+    indicatorDuration,
+    maxPause,
+    pauseCount,
+    totalPauseMs,
+    totalMaskedMs,
+    realTimeline,
+    indicatorTimeline,
+  } = sessionData
+
+  console.log('[typingSessions] preparing write', {
+    participantId,
+    roomId,
+    deltaT,
+    endReason,
+    authUid: auth.currentUser?.uid ?? null,
+  })
+
+  if (!auth.currentUser) {
+    const error = new Error('Cannot write typingSessions: user is not authenticated')
+    console.error('[typingSessions] write blocked', error.message)
+    throw error
+  }
+
   const payload = {
     participantId: String(participantId),
     roomId: String(roomId),
@@ -52,7 +68,26 @@ export async function saveTypingSession({
     savedAt: serverTimestamp(),
   }
 
-  const docRef = await addDoc(typingSessionsRef(), payload)
-  console.info('[typingSessions] saved', docRef.id, payload)
-  return docRef
+  console.log('[typingSessions] calling addDoc...', payload)
+
+  try {
+    const docRef = await addDoc(typingSessionsRef(), payload)
+    console.log('[typingSessions] write success', {
+      docId: docRef.id,
+      path: docRef.path,
+      participantId: payload.participantId,
+      roomId: payload.roomId,
+      endReason: payload.endReason,
+    })
+    return docRef
+  } catch (error) {
+    console.error('[typingSessions] write failed', {
+      code: error?.code,
+      message: error?.message,
+      participantId: payload.participantId,
+      roomId: payload.roomId,
+      endReason: payload.endReason,
+    })
+    throw error
+  }
 }

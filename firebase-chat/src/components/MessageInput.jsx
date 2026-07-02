@@ -15,7 +15,7 @@ export default function MessageInput({
 
     if (value.length !== previousLength) {
       const type = value.length > previousLength ? 'input' : 'delete'
-      console.log('[debug] MessageInput change', { type, valueLength: value.length })
+      console.log('[typingSessions] MessageInput change', { type, valueLength: value.length })
       onKeyboardEvent?.(type)
     }
 
