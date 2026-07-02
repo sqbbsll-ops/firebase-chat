@@ -9,7 +9,7 @@
 
 .header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.75rem 0.85rem;
@@ -24,13 +24,6 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text-primary);
-}
-
-.subtitle {
-  margin: 0.15rem 0 0;
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: var(--text-secondary);
 }
 
 .badge {

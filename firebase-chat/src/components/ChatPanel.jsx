@@ -12,7 +12,6 @@ export default function ChatPanel({
   participantId,
   partnerId,
   typingDelayMs,
-  conditionLabel,
 }) {
   const roomId = buildRoomId(participantId, partnerId)
   const { messages, loading, error } = useMessages(roomId)
@@ -42,10 +41,7 @@ export default function ChatPanel({
   return (
     <section className={styles.panel}>
       <header className={styles.header}>
-        <div>
-          <h2 className={styles.title}>Chat with {partnerId}</h2>
-          <p className={styles.subtitle}>{conditionLabel} typing delay</p>
-        </div>
+        <h2 className={styles.title}>Chat with {partnerId}</h2>
         <span className={styles.badge}>Room {roomId}</span>
       </header>
 

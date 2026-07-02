@@ -28,7 +28,6 @@ export default function ParticipantPage() {
           participantId={participantId}
           partnerId={pairing.left.partner}
           typingDelayMs={pairing.left.delta}
-          conditionLabel="1s"
         />
 
         <div className={styles.divider} aria-hidden="true" />
@@ -37,7 +36,6 @@ export default function ParticipantPage() {
           participantId={participantId}
           partnerId={pairing.right.partner}
           typingDelayMs={pairing.right.delta}
-          conditionLabel="24s"
         />
       </div>
     </div>
