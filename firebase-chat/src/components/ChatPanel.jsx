@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { buildRoomId } from '../constants'
 import { useMessages } from '../hooks/useMessages'
 import { useTyping } from '../hooks/useTyping'
+import { useWritingLogs } from '../hooks/useWritingLogs'
 import { useReadReceipts } from '../hooks/useReadReceipts'
 import { sendMessage } from '../services/messages'
 import MessageList from './MessageList'
@@ -17,6 +18,7 @@ export default function ChatPanel({
   const { messages, loading, error } = useMessages(roomId)
   const { typingUsers, notifyTyping, recordKeyboardEvent, cancelTypingSession } =
     useTyping(roomId, participantId, typingDelayMs)
+  const { recordKeyPress, recordDraft } = useWritingLogs(roomId, participantId)
   const [sending, setSending] = useState(false)
 
   useReadReceipts(roomId, participantId, messages)
@@ -59,6 +61,8 @@ export default function ChatPanel({
           onSend={handleSend}
           onTypingChange={notifyTyping}
           onKeyboardEvent={recordKeyboardEvent}
+          onKeyPressLog={recordKeyPress}
+          onDraftLog={recordDraft}
           disabled={sending}
         />
       </main>

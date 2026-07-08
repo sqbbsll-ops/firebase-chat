@@ -1,13 +1,27 @@
 import { useState } from 'react'
+import { normalizeLoggedKey } from '../utils/loggedKeys'
 import styles from './MessageInput.module.css'
 
 export default function MessageInput({
   onSend,
   onTypingChange,
   onKeyboardEvent,
+  onKeyPressLog,
+  onDraftLog,
   disabled,
 }) {
   const [text, setText] = useState('')
+
+  function handleKeyDown(e) {
+    const key = normalizeLoggedKey(e.key)
+    if (!key) return
+
+    onKeyPressLog?.(key)
+
+    if (key === 'Enter') {
+      onDraftLog?.(e.target.value)
+    }
+  }
 
   function handleChange(e) {
     const value = e.target.value
@@ -20,6 +34,7 @@ export default function MessageInput({
     }
 
     setText(value)
+    onDraftLog?.(value)
     onTypingChange?.(value.length > 0)
   }
 
@@ -39,6 +54,7 @@ export default function MessageInput({
         className={styles.input}
         value={text}
         onChange={handleChange}
+        onKeyDown={handleKeyDown}
         placeholder="Type a message…"
         disabled={disabled}
         autoComplete="off"
