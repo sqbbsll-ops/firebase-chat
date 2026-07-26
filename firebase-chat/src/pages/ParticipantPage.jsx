@@ -12,7 +12,7 @@ export default function ParticipantPage() {
     return (
       <div className={styles.invalid}>
         <h1>Invalid participant</h1>
-        <p>Use a link like /participant/A through /participant/F.</p>
+        <p>Use a link like /participant/A through /participant/H.</p>
       </div>
     )
   }

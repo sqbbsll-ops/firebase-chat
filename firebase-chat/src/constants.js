@@ -5,23 +5,31 @@ export const PARTICIPANT_PAIRINGS = {
     right: { partner: 'D', delta: 24000 },
   },
   B: {
-    left: { partner: 'E', delta: 1000 },
-    right: { partner: 'F', delta: 24000 },
+    left: { partner: 'D', delta: 1000 },
+    right: { partner: 'G', delta: 24000 },
   },
   C: {
     left: { partner: 'A', delta: 1000 },
-    right: { partner: 'B', delta: 24000 },
+    right: { partner: 'F', delta: 24000 },
   },
   D: {
-    left: { partner: 'F', delta: 1000 },
+    left: { partner: 'B', delta: 1000 },
     right: { partner: 'A', delta: 24000 },
   },
   E: {
-    left: { partner: 'B', delta: 1000 },
-    right: { partner: 'C', delta: 24000 },
+    left: { partner: 'G', delta: 1000 },
+    right: { partner: 'H', delta: 24000 },
   },
   F: {
-    left: { partner: 'D', delta: 1000 },
+    left: { partner: 'H', delta: 1000 },
+    right: { partner: 'C', delta: 24000 },
+  },
+  G: {
+    left: { partner: 'E', delta: 1000 },
+    right: { partner: 'B', delta: 24000 },
+  },
+  H: {
+    left: { partner: 'F', delta: 1000 },
     right: { partner: 'E', delta: 24000 },
   },
 }
