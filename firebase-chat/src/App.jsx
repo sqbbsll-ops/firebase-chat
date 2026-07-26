@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ExperimentAuthProvider, useExperimentAuth } from './contexts/ExperimentAuthContext'
 import ParticipantPage from './pages/ParticipantPage'
+import AdminPage from './pages/AdminPage'
 import './App.css'
 
 function AppRoutes() {
@@ -24,6 +25,7 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/admin" element={<AdminPage />} />
       <Route path="/participant/:id/:group" element={<ParticipantPage />} />
       <Route path="/" element={<Navigate to="/participant/A/group1" replace />} />
       <Route path="*" element={<Navigate to="/participant/A/group1" replace />} />

@@ -55,3 +55,16 @@ export function isValidParticipantId(participantId) {
 export function isValidGroupId(groupId) {
   return VALID_GROUP_IDS.includes(groupId)
 }
+
+/** All room ids used in the experiment for a given group. */
+export function getAllRoomIdsForGroup(groupId) {
+  const roomIds = new Set()
+
+  for (const participantId of VALID_PARTICIPANT_IDS) {
+    const pairing = PARTICIPANT_PAIRINGS[participantId]
+    roomIds.add(buildRoomId(participantId, pairing.left.partner, groupId))
+    roomIds.add(buildRoomId(participantId, pairing.right.partner, groupId))
+  }
+
+  return [...roomIds]
+}
