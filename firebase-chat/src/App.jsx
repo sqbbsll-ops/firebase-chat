@@ -24,9 +24,9 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/participant/:id" element={<ParticipantPage />} />
-      <Route path="/" element={<Navigate to="/participant/A" replace />} />
-      <Route path="*" element={<Navigate to="/participant/A" replace />} />
+      <Route path="/participant/:id/:group" element={<ParticipantPage />} />
+      <Route path="/" element={<Navigate to="/participant/A/group1" replace />} />
+      <Route path="*" element={<Navigate to="/participant/A/group1" replace />} />
     </Routes>
   )
 }

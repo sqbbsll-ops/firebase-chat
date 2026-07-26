@@ -13,12 +13,13 @@ export default function ChatPanel({
   participantId,
   partnerId,
   typingDelayMs,
+  groupId,
 }) {
-  const roomId = buildRoomId(participantId, partnerId)
+  const roomId = buildRoomId(participantId, partnerId, groupId)
   const { messages, loading, error } = useMessages(roomId)
   const { typingUsers, notifyTyping, recordKeyboardEvent, cancelTypingSession } =
-    useTyping(roomId, participantId, typingDelayMs)
-  const { recordKeyPress, recordDraft } = useWritingLogs(roomId, participantId)
+    useTyping(roomId, participantId, typingDelayMs, groupId)
+  const { recordKeyPress, recordDraft } = useWritingLogs(roomId, participantId, groupId)
   const [sending, setSending] = useState(false)
 
   useReadReceipts(roomId, participantId, messages)

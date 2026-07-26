@@ -1,18 +1,29 @@
 import { useParams } from 'react-router-dom'
 import ChatPanel from '../components/ChatPanel'
-import { getParticipantPairing, isValidParticipantId } from '../constants'
+import {
+  getParticipantPairing,
+  isValidGroupId,
+  isValidParticipantId,
+} from '../constants'
 import styles from './ParticipantPage.module.css'
 
 export default function ParticipantPage() {
-  const { id } = useParams()
+  const { id, group } = useParams()
   const participantId = id?.toUpperCase()
+  const groupId = group?.toLowerCase()
   const pairing = participantId ? getParticipantPairing(participantId) : null
 
-  if (!participantId || !isValidParticipantId(participantId) || !pairing) {
+  if (
+    !participantId ||
+    !isValidParticipantId(participantId) ||
+    !groupId ||
+    !isValidGroupId(groupId) ||
+    !pairing
+  ) {
     return (
       <div className={styles.invalid}>
-        <h1>Invalid participant</h1>
-        <p>Use a link like /participant/A through /participant/H.</p>
+        <h1>Invalid participant or group</h1>
+        <p>Use a link like /participant/A/group1 through /participant/H/group3.</p>
       </div>
     )
   }
@@ -20,7 +31,9 @@ export default function ParticipantPage() {
   return (
     <div className={styles.page}>
       <header className={styles.topBar}>
-        <h1 className={styles.participantLabel}>Participant {participantId}</h1>
+        <h1 className={styles.participantLabel}>
+          Participant {participantId} · {groupId}
+        </h1>
       </header>
 
       <div className={styles.dualLayout}>
@@ -28,6 +41,7 @@ export default function ParticipantPage() {
           participantId={participantId}
           partnerId={pairing.left.partner}
           typingDelayMs={pairing.left.delta}
+          groupId={groupId}
         />
 
         <div className={styles.divider} aria-hidden="true" />
@@ -36,6 +50,7 @@ export default function ParticipantPage() {
           participantId={participantId}
           partnerId={pairing.right.partner}
           typingDelayMs={pairing.right.delta}
+          groupId={groupId}
         />
       </div>
     </div>

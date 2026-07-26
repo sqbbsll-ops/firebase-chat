@@ -10,13 +10,14 @@ function toInt(value) {
 }
 
 /** Log a single key press for writing-process reconstruction. */
-export async function logKeyPress(roomId, { userId, key, timestamp }) {
+export async function logKeyPress(roomId, { userId, groupId, key, timestamp }) {
   if (!auth.currentUser) {
     throw new Error('Cannot write writingLogs: user is not authenticated')
   }
 
   return addDoc(writingLogsRef(roomId), {
     userId: String(userId),
+    groupId: String(groupId),
     timestamp: toInt(timestamp),
     key: String(key),
     createdAt: serverTimestamp(),
@@ -24,13 +25,14 @@ export async function logKeyPress(roomId, { userId, key, timestamp }) {
 }
 
 /** Log the input draft snapshot after a keyboard event. */
-export async function logDraftSnapshot(roomId, { userId, draft, timestamp }) {
+export async function logDraftSnapshot(roomId, { userId, groupId, draft, timestamp }) {
   if (!auth.currentUser) {
     throw new Error('Cannot write writingLogs: user is not authenticated')
   }
 
   return addDoc(writingLogsRef(roomId), {
     userId: String(userId),
+    groupId: String(groupId),
     timestamp: toInt(timestamp),
     draft: String(draft),
     createdAt: serverTimestamp(),

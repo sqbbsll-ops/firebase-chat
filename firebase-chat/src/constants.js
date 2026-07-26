@@ -36,9 +36,12 @@ export const PARTICIPANT_PAIRINGS = {
 
 export const VALID_PARTICIPANT_IDS = Object.keys(PARTICIPANT_PAIRINGS)
 
-/** Build a room id from two participant ids (smaller letter first). */
-export function buildRoomId(participantA, participantB) {
-  return [participantA, participantB].sort().join('')
+export const VALID_GROUP_IDS = ['group1', 'group2', 'group3']
+
+/** Build a room id from two participant ids and experiment group (smaller letter first). */
+export function buildRoomId(participantA, participantB, groupId) {
+  const baseRoomId = [participantA, participantB].sort().join('')
+  return `${baseRoomId}_${groupId}`
 }
 
 export function getParticipantPairing(participantId) {
@@ -47,4 +50,8 @@ export function getParticipantPairing(participantId) {
 
 export function isValidParticipantId(participantId) {
   return VALID_PARTICIPANT_IDS.includes(participantId)
+}
+
+export function isValidGroupId(groupId) {
+  return VALID_GROUP_IDS.includes(groupId)
 }

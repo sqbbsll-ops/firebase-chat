@@ -20,7 +20,7 @@ function clearTimerRef(timerRef) {
   }
 }
 
-export function useTyping(roomId, participantId, typingDelayMs) {
+export function useTyping(roomId, participantId, typingDelayMs, groupId) {
   const [typingUsers, setTypingUsers] = useState([])
   const hideIndicatorTimerRef = useRef(null)
   const idleSessionTimerRef = useRef(null)
@@ -104,6 +104,7 @@ export function useTyping(roomId, participantId, typingDelayMs) {
       const sessionData = {
         participantId,
         roomId,
+        groupId,
         deltaT: typingDelayMs,
         endReason,
         sessionStartTime: session.sessionStartTime,
@@ -140,7 +141,7 @@ export function useTyping(roomId, participantId, typingDelayMs) {
         isPersistingRef.current = false
       }
     },
-    [participantId, roomId, typingDelayMs],
+    [participantId, roomId, typingDelayMs, groupId],
   )
 
   const turnIndicatorOn = useCallback(async () => {

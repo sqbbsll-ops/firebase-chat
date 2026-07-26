@@ -38,6 +38,7 @@ export async function saveTypingSession(sessionData) {
   const {
     participantId,
     roomId,
+    groupId,
     deltaT,
     endReason,
     sessionStartTime,
@@ -57,6 +58,7 @@ export async function saveTypingSession(sessionData) {
   console.log('[typingSessions] preparing write', {
     participantId,
     roomId,
+    groupId,
     deltaT,
     endReason,
     keyboardEventCount: keyboardEvents?.length ?? 0,
@@ -73,6 +75,7 @@ export async function saveTypingSession(sessionData) {
   const payload = {
     participantId: String(participantId),
     roomId: String(roomId),
+    groupId: String(groupId),
     deltaT: toInt(deltaT),
     endReason: String(endReason),
     sessionStartTime: toInt(sessionStartTime),
