@@ -24,11 +24,21 @@
   text-transform: uppercase;
 }
 
-.dualLayout {
+.dualLayout,
+.singleLayout {
   flex: 1;
   display: flex;
   min-height: 0;
   overflow: hidden;
+}
+
+.singleLayout {
+  justify-content: center;
+}
+
+.singleLayout > section {
+  flex: 1;
+  max-width: 720px;
 }
 
 .divider {
@@ -60,7 +70,8 @@
 }
 
 @media (max-width: 720px) {
-  .dualLayout {
+  .dualLayout,
+  .singleLayout {
     flex-direction: column;
   }
 

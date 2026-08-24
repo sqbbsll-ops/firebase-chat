@@ -11,22 +11,31 @@ export default function ParticipantPage() {
   const { id, group } = useParams()
   const participantId = id?.toUpperCase()
   const groupId = group?.toLowerCase()
-  const pairing = participantId ? getParticipantPairing(participantId) : null
+  const pairing =
+    participantId && groupId ? getParticipantPairing(participantId, groupId) : null
 
   if (
     !participantId ||
-    !isValidParticipantId(participantId) ||
     !groupId ||
     !isValidGroupId(groupId) ||
+    !isValidParticipantId(participantId, groupId) ||
     !pairing
   ) {
     return (
       <div className={styles.invalid}>
         <h1>Invalid participant or group</h1>
-        <p>Use a link like /participant/A/group1 through /participant/H/group3.</p>
+        <p>
+          Use /participant/A/group1 through /participant/H/group3, or
+          /participant/A/group4 through /participant/D/group4.
+        </p>
       </div>
     )
   }
+
+  const hasLeft = Boolean(pairing.left)
+  const hasRight = Boolean(pairing.right)
+  const layoutClassName =
+    hasLeft && hasRight ? styles.dualLayout : styles.singleLayout
 
   return (
     <div className={styles.page}>
@@ -36,22 +45,26 @@ export default function ParticipantPage() {
         </h1>
       </header>
 
-      <div className={styles.dualLayout}>
-        <ChatPanel
-          participantId={participantId}
-          partnerId={pairing.left.partner}
-          typingDelayMs={pairing.left.delta}
-          groupId={groupId}
-        />
+      <div className={layoutClassName}>
+        {pairing.left ? (
+          <ChatPanel
+            participantId={participantId}
+            partnerId={pairing.left.partner}
+            typingDelayMs={pairing.left.delta}
+            groupId={groupId}
+          />
+        ) : null}
 
-        <div className={styles.divider} aria-hidden="true" />
+        {hasLeft && hasRight ? <div className={styles.divider} aria-hidden="true" /> : null}
 
-        <ChatPanel
-          participantId={participantId}
-          partnerId={pairing.right.partner}
-          typingDelayMs={pairing.right.delta}
-          groupId={groupId}
-        />
+        {pairing.right ? (
+          <ChatPanel
+            participantId={participantId}
+            partnerId={pairing.right.partner}
+            typingDelayMs={pairing.right.delta}
+            groupId={groupId}
+          />
+        ) : null}
       </div>
     </div>
   )
